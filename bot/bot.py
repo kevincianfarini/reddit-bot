@@ -1,12 +1,18 @@
 import re
 import praw
+import sqlite3
 from amazon.api import AmazonAPI, AmazonException
 
 r = praw.Reddit(user_agent="Kevin Cianfarini's reddit bot that sends different prices of items from different sites")
 r.login(username='AmazonItBot', password='Scc1122445102795*') #TODO do oath and put in config file
-already_answered_comments = []
 link_regex = re.compile(r'\bAmazonIt![\s]*(.*?)(?:\.|;|$)', re.M | re.I)
+connection = sqlite3.connect('comments.db')
+cursor = connection.cursor()
 
+
+def create_database():
+    connection.execute('''CREATE TABLE IF NOT EXISTS COMMENTS(COMMENT_ID TEXT NOT NULL)''')
+    print 'database created'
 
 
 def remove_formatting(comment):
@@ -23,7 +29,9 @@ def get_amazon_order(item): #TODO config file to hide this
 
 
 def already_answered(comment):
-    return comment.id in already_answered_comments
+    cursor.execute('select COMMENT_ID from COMMENTS where COMMENT_ID=%s' % comment.id)
+    data = cursor.fetchall()
+    return len(data) > 0
 
 
 def generate_reply(requests):
@@ -44,7 +52,7 @@ def generate_reply(requests):
 
 def post_reply(comment, reply):
     comment.reply(reply)
-    already_answered_comments.append(comment.id)
+    cursor.execute('INSERT INTO COMMENTS VALUES %s' % comment.id)
 
 
 def check_comments():
@@ -52,8 +60,9 @@ def check_comments():
         clean_comment = remove_formatting(comment.body)
         requests = link_regex.findall(clean_comment)
         if len(requests) > 0:
-            if not already_answered(comment) and comment.author.name != 'AmazonItBot':
+            if not already_answered(comment):
                 reply = generate_reply(requests)
                 post_reply(comment, reply)
 
+create_database()
 check_comments()
