@@ -1,10 +1,11 @@
 import re
 import praw
 import sqlite3
+from config import AWS, REDDIT_AUTH
 from amazon.api import AmazonAPI, AmazonException
 
 r = praw.Reddit(user_agent="Kevin Cianfarini's reddit bot that sends different prices of items from different sites")
-r.login(username='AmazonItBot', password='Scc1122445102795*') #TODO do oath and put in config file
+r.login(username=REDDIT_AUTH['USERNAME'], password=REDDIT_AUTH['PASSWORD']) #TODO do oath and put in config file
 link_regex = re.compile(r'\bAmazonIt![\s]*(.*?)(?:\.|;|$)', re.M | re.I)
 connection = sqlite3.connect('comments.db')
 cursor = connection.cursor()
@@ -20,7 +21,7 @@ def remove_formatting(comment):
 
 
 def get_amazon_order(item): #TODO config file to hide this
-    amazon = AmazonAPI('AKIAJ2GNCUSCN4HAJXEA', 'hH5W7wg9gUtpPjroI8Y+7jdCIL4yr/lwEJhjEdmm', 'redditbotli03-20')
+    amazon = AmazonAPI(AWS['AMAZON_KEY'], AWS['SECRET_KEY'], AWS['ASSOCIATE_TAG'])
     try:
         products = amazon.search_n(1, Keywords=item, SearchIndex='All')
     except AmazonException as e:
@@ -53,6 +54,7 @@ def generate_reply(requests):
 def post_reply(comment, reply):
     comment.reply(reply)
     cursor.execute('INSERT INTO COMMENTS VALUES %s' % comment.id)
+    connection.commit()
 
 
 def check_comments():
