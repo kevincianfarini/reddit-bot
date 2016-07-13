@@ -7,7 +7,7 @@ from amazon.api import AmazonAPI, AmazonException
 r = praw.Reddit(user_agent="Kevin Cianfarini's reddit bot that sends different prices of items from different sites")
 r.login(username=REDDIT_AUTH['USERNAME'], password=REDDIT_AUTH['PASSWORD']) #TODO do oath and put in config file
 link_regex = re.compile(r'\bAmazonIt![\s]*(.*?)(?:\.|;|$)', re.M | re.I)
-connection = sqlite3.connect('comments.db')
+connection = sqlite3.connect('../comments.db')
 cursor = connection.cursor()
 
 
@@ -20,17 +20,20 @@ def remove_formatting(comment):
     return comment.replace("*", "").replace("~", "").replace("^", "").replace(">", "").replace("[", "").replace("]", "").replace("(", "").replace(")", "")
 
 
-def get_amazon_order(item): #TODO config file to hide this
+def get_amazon_order(item):
     amazon = AmazonAPI(AWS['AMAZON_KEY'], AWS['SECRET_KEY'], AWS['ASSOCIATE_TAG'])
     try:
         products = amazon.search_n(1, Keywords=item, SearchIndex='All')
+        for product in products:
+            if item in product.title:
+                return product
+        return None
     except AmazonException as e:
         return None
-    return products[0]
 
 
 def already_answered(comment):
-    cursor.execute('select COMMENT_ID from COMMENTS where COMMENT_ID=%s' % comment.id)
+    cursor.execute("select COMMENT_ID from COMMENTS where COMMENT_ID='%s'" % comment.id)
     data = cursor.fetchall()
     return len(data) > 0
 
