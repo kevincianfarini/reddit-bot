@@ -1,11 +1,13 @@
 import re
 import praw
 import sqlite3
+import difflib
+import time
 from config import AWS, REDDIT_AUTH
 from amazon.api import AmazonAPI, AmazonException
 
 r = praw.Reddit(user_agent="Kevin Cianfarini's reddit bot that sends different prices of items from different sites")
-r.login(username=REDDIT_AUTH['USERNAME'], password=REDDIT_AUTH['PASSWORD']) #TODO do oath and put in config file
+r.login(username=REDDIT_AUTH['USERNAME'], password=REDDIT_AUTH['PASSWORD']) #TODO do oath
 link_regex = re.compile(r'\bAmazonIt![\s]*(.*?)(?:\.|;|$)', re.M | re.I)
 connection = sqlite3.connect('../comments.db')
 cursor = connection.cursor()
@@ -25,9 +27,14 @@ def get_amazon_order(item):
     try:
         products = amazon.search_n(1, Keywords=item, SearchIndex='All')
         for product in products:
-            if item in product.title:
+            if item.lower() in product.title.lower():
                 return product
-        return None
+        titles = [product.title for product in products]
+        matches = difflib.get_close_matches(item, titles)
+        if len(matches) > 0:
+            return next(product for product in products if product.title == matches[0])
+        else:
+            return None
     except AmazonException as e:
         return None
 
@@ -50,14 +57,24 @@ def generate_reply(requests):
         else:
             reply += "* I couldn't find anything matching %s. Sorry!" % request
             reply += '\n\n'
-    reply += '**I am a bot. If you have any feedback that might improve me, send a message!**'
+    reply += '**Bleep bloop, I am a bot. I am pretty new so send a message on how to improve!**'
     return reply
 
 
 def post_reply(comment, reply):
     comment.reply(reply)
-    cursor.execute('INSERT INTO COMMENTS VALUES %s' % comment.id)
+    cursor.execute("INSERT INTO COMMENTS (COMMENT_ID) VALUES ('%s')" % comment.id)
     connection.commit()
+
+
+def handle_rate_limit_reply(comment, reply):
+    while True:
+        try:
+            post_reply(comment, reply)
+            break
+        except praw.errors.RateLimitExceeded as e:
+            print 'sleeping for %d seconds' % e.sleep_time
+            time.sleep(e.sleep_time)
 
 
 def check_comments():
@@ -67,7 +84,7 @@ def check_comments():
         if len(requests) > 0:
             if not already_answered(comment):
                 reply = generate_reply(requests)
-                post_reply(comment, reply)
+                handle_rate_limit_reply(comment, reply)
 
 create_database()
 check_comments()
