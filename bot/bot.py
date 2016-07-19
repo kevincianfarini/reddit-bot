@@ -25,17 +25,14 @@ def remove_formatting(comment):
 def get_amazon_order(item):
     amazon = AmazonAPI(AWS['AMAZON_KEY'], AWS['SECRET_KEY'], AWS['ASSOCIATE_TAG'])
     try:
-        products = amazon.search_n(1, Keywords=item, SearchIndex='All')
-        for product in products:
-            if item.lower() in product.title.lower():
-                return product
+        products = amazon.search_n(20, Keywords=item, SearchIndex='All')
         titles = [product.title for product in products]
         matches = difflib.get_close_matches(item, titles)
         if len(matches) > 0:
             return next(product for product in products if product.title == matches[0])
         else:
             return None
-    except AmazonException as e:
+    except AmazonException:
         return None
 
 
