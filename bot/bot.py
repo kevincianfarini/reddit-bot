@@ -1,7 +1,6 @@
 import re
 import praw
 import sqlite3
-import difflib
 import time
 from config import AWS, REDDIT_AUTH
 from amazon.api import AmazonAPI, AmazonException
@@ -15,7 +14,6 @@ cursor = connection.cursor()
 
 def create_database():
     connection.execute('''CREATE TABLE IF NOT EXISTS COMMENTS(COMMENT_ID TEXT NOT NULL)''')
-    print 'database created'
 
 
 def remove_formatting(comment):
@@ -24,14 +22,16 @@ def remove_formatting(comment):
 
 def get_amazon_order(item):
     amazon = AmazonAPI(AWS['AMAZON_KEY'], AWS['SECRET_KEY'], AWS['ASSOCIATE_TAG'])
-    try:
-        products = amazon.search_n(20, Keywords=item, SearchIndex='All')
-        if len(products) > 0:
-            for product in products:
-                pass
-        else:
+    if len(item) > 0:
+        try:
+            product = amazon.search_n(1, Keywords=item, SearchIndex='All')
+            try:
+                return product[0]
+            except IndexError:
+                return None
+        except AmazonException:
             return None
-    except AmazonException:
+    else:
         return None
 
 
@@ -67,6 +67,7 @@ def handle_rate_limit_reply(comment, reply):
     while True:
         try:
             post_reply(comment, reply)
+            print 'replied to comment %s' % comment.id
             break
         except praw.errors.RateLimitExceeded as e:
             print 'sleeping for %d seconds' % e.sleep_time
