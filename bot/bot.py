@@ -26,10 +26,9 @@ def get_amazon_order(item):
     amazon = AmazonAPI(AWS['AMAZON_KEY'], AWS['SECRET_KEY'], AWS['ASSOCIATE_TAG'])
     try:
         products = amazon.search_n(20, Keywords=item, SearchIndex='All')
-        titles = [product.title for product in products]
-        matches = difflib.get_close_matches(item, titles)
-        if len(matches) > 0:
-            return next(product for product in products if product.title == matches[0])
+        if len(products) > 0:
+            for product in products:
+                pass
         else:
             return None
     except AmazonException:
