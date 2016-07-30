@@ -4,6 +4,7 @@ import sqlite3
 import time
 from config import AWS, REDDIT_AUTH
 from amazon.api import AmazonAPI, AmazonException
+from subreddits import SUBREDDITS
 
 r = praw.Reddit(user_agent="this is /u/kmatthewc's program that responds to requests from reddit for amazon products")
 r.login(username=REDDIT_AUTH['USERNAME'], password=REDDIT_AUTH['PASSWORD']) #TODO do oath
@@ -75,8 +76,7 @@ def handle_rate_limit_reply(comment, reply):
 
 
 def check_comments():
-    for comment in praw.helpers.comment_stream(r, 'test'):
-        print ('parsed comment %s' % comment.id)
+    for comment in praw.helpers.comment_stream(r, '+'.join(SUBREDDITS), limit=None):
         clean_comment = remove_formatting(comment.body)
         requests = link_regex.findall(clean_comment)
         if len(requests) > 0:
