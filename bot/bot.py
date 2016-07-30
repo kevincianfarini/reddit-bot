@@ -5,7 +5,7 @@ import time
 from config import AWS, REDDIT_AUTH
 from amazon.api import AmazonAPI, AmazonException
 
-r = praw.Reddit(user_agent="this is /u/kmatthewc's bot that responds to requests from reddit for amazon products")
+r = praw.Reddit(user_agent="this is /u/kmatthewc's program that responds to requests from reddit for amazon products")
 r.login(username=REDDIT_AUTH['USERNAME'], password=REDDIT_AUTH['PASSWORD']) #TODO do oath
 link_regex = re.compile(r'\bAmazonIt![\s]*(.*?)(?:\.|;|$)', re.M | re.I)
 connection = sqlite3.connect('../comments.db')
