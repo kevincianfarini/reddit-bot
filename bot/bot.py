@@ -67,15 +67,16 @@ def handle_rate_limit_reply(comment, reply):
     while True:
         try:
             post_reply(comment, reply)
-            print 'replied to comment %s' % comment.id
+            print('replied to comment %s' % comment.id)
             break
         except praw.errors.RateLimitExceeded as e:
-            print 'sleeping for %d seconds' % e.sleep_time
+            print('sleeping for %d seconds' % e.sleep_time)
             time.sleep(e.sleep_time)
 
 
 def check_comments():
     for comment in praw.helpers.comment_stream(r, 'test'):
+        print ('parsed comment %s' % comment.id)
         clean_comment = remove_formatting(comment.body)
         requests = link_regex.findall(clean_comment)
         if len(requests) > 0:

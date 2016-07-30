@@ -1,2 +1,2 @@
-python-amazon-simple-product-api>=2.1.0
-praw>=3.5.0
+python-amazon-simple-product-api
+praw
